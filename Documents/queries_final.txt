@@ -1,0 +1,137 @@
+Join queries:
+-------------
+j1)uid,hotelid given hotel name
+q:-	select uid,hotel_name from Hotels join user_hotel on Hotels.Hotel_id=user_hotel.hotel_id where Hotel_name='Umaid Bhawan';
+
+
+j2)names of users who booked the flight with the given flight number.
+q:-	select distinct username,flight_number from userProfile as up Join user_flight as uf on up.uid=uf.uid where flight_number='f0';
+
+
+j3)names of users who lives in a city and books hotel located in the same city.
+cq:-	select up.username,up.city from userprofile as up where up.uid in  (select uh.uid from hotels as h JOIN user_hotel as uh on uh.hotel_id=h.hotel_id where h.city=up.city and uh.uid = up.uid);
+
+j4)username of users who booked a flight ticket to "Delhi" from his home city.
+cq:-	 select up.username,up.city from userprofile as up where up.uid in 
+	 (select uid from user_flight as uf JOIN flights as f on uf.flight_number = f.flight_number where dest="Delhi" and src= up.city);
+
+j5)usernames of users who booked a bus ticket to "Chennai".
+nq:-	 select username from userProfile as up where up.uid in 
+	 (select uid from user_bus as ub JOIN bus as b on ub.bus_number = b.bus_number where src="Chennai");
+
+
+j6)hotels located in a city to which users can reach by flight.
+nq:-	 select H.hotel_name,H.city from Hotels as H where H.city in (select distinct dest from flights);
+
+Aggregate Queries:
+------------------
+a1)print the users who always prefer flight.
+q:-	(select uf.uid from user_flight as uf Group By uf.uid Having count(flight_number)>0) EXCEPT (select ub.uid from user_bus as ub Group By ub.uid Having count(bus_number)>0);
+
+
+a2)print the number of bookings of each hotel.
+q:- select hotel_id,count(uid) as c from user_hotel group by hotel_id order by c DESC;
+
+
+a3)print number of users travelled from given src to given dest by bus.
+q:-	select count(uid) as c from user_bus JOIN bus on bus.bus_number = user_bus.bus_number where bus.src="Bengaluru"  and bus.dest="Chennai";
+
+
+a4)print the places which have minimum incoming buses.
+q:-	select dest,count(*) as c from Bus Group By dest order by c LIMIT 1;
+
+
+a5)print the average amount spent by an user in each hotel.
+q:-	select  uh.hotel_id,AVG(no_of_persons*priceperperson) as AVG_Cost from user_hotel as uh JOIN hotels as h where h.hotel_id=uh.hotel_id Group By (uh.hotel_id);   
+
+
+set operations:
+---------------
+s1)print the list of uid who have stayed in hote11 on 18-11-2022 and hotel2 on 19-11-2022
+sq:- (select uid from user_hotel  as uh1 where uh1.hotel_id = "h1" and uh1.booking_date="2022-11-19") 
+	UNION (select uid from user_hotel  as uh2 where uh2.hotel_id = "h2" and uh2.booking_date="2022-11-20");
+
+
+s2)print the list of passengers who have travelled from Bengaluru to delhi by flight and did not returned to Bengaluru from Delhi by flight.
+sq:-	(select uid from user_flight as uf JOIN flights as f where f.flight_number = uf.flight_number and f.src="Bengaluru" and f.dest = "Delhi")
+	EXCEPT (select uid from user_flight as uf1 JOIN flights as f1 where f1.flight_number = uf1.flight_number and f1.dest="Bengaluru" and f1.src = "Delhi");
+
+s3)print the list of passengers who have travelled from Bengaluru to Chennai by flight and returned to Bengaluru from Chennai by bus.
+sq:-	(select uid from user_flight as uf JOIN flights as f where f.flight_number = uf.flight_number and f.src="Bengaluru" and f.dest = "Chennai")
+	INTERSECT (select uid from user_bus as ub JOIN bus as b where b.bus_number = ub.bus_number and b.dest="Bengaluru" and b.src = "Chennai");
+
+s4)print the list of passengers who have travelled from Bengaluru to Delhi by flight and also stayed in hotel with hotel_id "h0".
+sq:-	(select uid from user_flight as uf JOIN flights as f where f.flight_number = uf.flight_number and f.src="Bengaluru" and f.dest = "Delhi")
+	INTERSECT (select uh.uid from user_hotel as uh where uh.hotel_id="h0");
+
+Triggers and function :
+--------------------------
+
+t1)Update money transaction details into transaction table when user booked a hotel.
+Delimiter $
+CREATE FUNCTION find_hotelprice(hotelid varchar(20),cnt int)
+RETURNS int
+DETERMINISTIC
+BEGIN
+DECLARE RESULT int;
+select cnt*priceperperson into RESULT from hotels where hotel_id=hotelid;
+return RESULT;
+END$
+Delimiter ;
+
+Delimiter $
+create trigger add_transaction_details after insert on user_hotel
+for each row 
+Begin
+	insert into userbookinginfo(TDate,Amount,ServiceType,ServiceId,ServiceDate,Uid) VALUES(SYSDATE(),find_hotelprice(new.hotel_id,new.no_of_persons),"hotel",new.hotel_id,new.booking_date,new.uid);
+End$
+Delimiter ;
+
+t2)Update money transaction details into transaction table when user booked a bus.
+Delimiter $
+CREATE FUNCTION calculate_busfare(busno varchar(20),cnt int)
+RETURNS int
+DETERMINISTIC
+BEGIN
+DECLARE RESULT int;
+select cnt*priceperperson into RESULT from bus where bus_number=busno;
+return RESULT;
+END$
+Delimiter ;
+
+Delimiter $
+create trigger add_transaction_details_bus after insert on user_bus
+for each row 
+Begin
+	insert into userbookinginfo(TDate,Amount,ServiceType,ServiceId,ServiceDate,Uid) VALUES(SYSDATE(),calculate_busfare(new.bus_number,new.no_of_persons),"bus",new.bus_number,new.travel_date,new.uid);
+End$
+Delimiter ;
+
+t3)Update money transaction details into transaction table when user booked a flight.
+Delimiter $
+CREATE FUNCTION calculate_flightfare(flightno varchar(20),cnt int)
+RETURNS int
+DETERMINISTIC
+BEGIN
+DECLARE RESULT int;
+select cnt*fareperperson into RESULT from flights where flight_number=flightno;
+return RESULT;
+END$
+Delimiter ;
+
+Delimiter $
+create trigger add_transaction_details_flights after insert on user_flight
+for each row 
+Begin
+	insert into userbookinginfo(TDate,Amount,ServiceType,ServiceId,ServiceDate,Uid) VALUES(SYSDATE(),calculate_flightfare(new.flight_number,new.no_of_persons),"flight",new.flight_number,new.travel_date,new.uid);
+End$
+Delimiter ;
+
+VIEWS:
+------------------------------
+v1) View for showing user and flight details together.
+CREATE VIEW flightusers AS
+select up.uid,up.username,uf.no_of_persons,f.flight_name,f.flight_number,f.fareperperson*uf.no_of_persons as totalcost,uf.travel_date 
+from userprofile as up join user_flight as uf on up.uid=uf.uid join flights as f on f.flight_number=uf.flight_number;
+
+UPDATE flightusers SET username='Johnny' where flight_number='f0' and travel_date='2022-11-20';
