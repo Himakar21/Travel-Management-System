@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Query Box</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/formStyles.css">
+    <script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>
+  </head>
+  <body>
+        <div class="container">
+            <form action="/query" method="post">
+                <div class="md-form mb-4 pink-textarea active-pink-textarea">
+                    <h2>Query box</h2>
+                    <textarea id="form18" name="sqlQuery" placeholder="Enter your query here" class="md-textarea form-control" rows="3"></textarea>
+                  </div>                  
+                  
+                <button type = "submit" class="btn btn-success" id="rq">Run Query</button>
+            </form>
+            <%if (display === 'yes'){%>
+                <h3>Results of the query :</h3><h4><%=q%></h4>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                            <%for (var key in result[0]){%>
+                                <th><%= key %></th>
+                            <%}%>
+                            </tr>
+                        <thead/>
+                    <%for (var i = 0;i < result.length;++i){%>
+                        <tr>
+                            <%for (var key in result[i]){%>
+                                <td><%= result[i][key]%></td>
+                            <%}%>
+                        </tr>
+                    <%}%>
+                    </table>
+                    <%if(result.length != 0){%>
+                        <p> Applied this operation on <%= result.length %> records</p>
+                    <%}%>
+            <%}%>
+        </div>
+  </body>
+</html>
+
+<!-- 
+    display
+    query box
+    result
+-->

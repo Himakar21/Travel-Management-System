@@ -1,0 +1,9 @@
+table td,th{
+    text-align: center;
+}
+
+.header-table{
+    table-layout: fixed;
+    width: 900px;
+    
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Travel Agency</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Arimo' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Hind:300' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+  <%if(type!='login'){%>
+    <%-include("./partials/nav.ejs")%>
+  <%}%>
+  <div class="login">
+    <form action="/form_login" method="post">
+      <h2></h2>UserID:<br>
+      <input type="text" name='username'><br>
+      Password:<br>
+      <input  name='password' minlength="6" maxlength="16" type="password"><br><br>
+    <input type="submit" value="Login" class="btn btn-primary btn-block btn-large">
+    </form>
+    
+  </div>
+
+</body>
+<footer>
+
+</footer>
+
+</html>
